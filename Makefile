@@ -1,8 +1,3 @@
-#---------------------------------------------------------------------
-# Makefile for VanitySearch
-#
-# Author : Jean-Luc PONS
-
 SRC = Base58.cpp IntGroup.cpp Random.cpp Timer.cpp Int.cpp IntMod.cpp \
       Point.cpp SECP256K1.cpp Vanity.cpp GPU/GPUGenerate.cpp \
       hash/ripemd160.cpp hash/sha256.cpp hash/sha512.cpp \
@@ -74,7 +69,7 @@ all: VanitySearch
 
 VanitySearch: $(OBJET)
 	@echo Making VanitySearch...
-	$(CXX) $(OBJET) $(LFLAGS) -o VanitySearch
+	$(CXX) $(OBJET) $(LFLAGS) -o keygen
 
 $(OBJET): | $(OBJDIR) $(OBJDIR)/GPU $(OBJDIR)/hash
 
