@@ -36,7 +36,7 @@ int main() {
     // Initialize GPU parameters
     const int gpuId = 0;                    // Use the first GPU
     const int nbThreadGroup = 1024;         // Number of thread groups
-    const int nbThreadPerGroup = 32;        // Threads per group
+    const int nbThreadPerGroup = 64;        // Threads per group
     const uint64_t threadsPerIteration = nbThreadGroup * nbThreadPerGroup;
     const uint32_t maxFound = 1024;         // Max items to be found
     const bool rekey = false;               // No rekeying during the process
