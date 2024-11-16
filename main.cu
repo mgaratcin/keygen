@@ -9,7 +9,7 @@
 
 #define START_KEY 0x4000000000000000ULL
 #define END_KEY   0x7fffffffffffffffULL
-#define BILLION   1
+#define BILLION   1000000000
 #define TARGET_KEY_INTERVAL 100000000000ULL // Print every 100 billionth key 
 
 // Helper function to convert Int to hex string
