@@ -1,16 +1,19 @@
 #include <iostream>
 #include <iomanip>
-#include <chrono> // For timing
+#include <chrono>
 #include <vector>
-#include "GPU/GPUEngine.h" // GPU Engine for computation
-#include "SECP256k1.h"     // Ensure correct case for SECP256K1
-#include "hash/sha256.h"   // Include your internal SHA256 header
-#include "hash/ripemd160.h" // Include your internal RIPEMD160 header
+#include <algorithm>
+#include "GPU/GPUEngine.h"
+#include "SECP256k1.h"
+#include "hash/sha256.h"
+#include "hash/ripemd160.h"
 
 #define START_KEY 0x4000000000000000ULL
 #define END_KEY   0x7fffffffffffffffULL
 #define BILLION   1000000000
-#define TARGET_KEY_INTERVAL 100000000000ULL // Print every 100 billionth key 
+
+// Target RIPEMD-160 hash
+const std::string TARGET_HASH = "739437bb3dd6d1983e66629c5f08c70e52769371";
 
 // Helper function to convert Int to hex string
 std::string intToHex(const Int& value) {
@@ -31,16 +34,16 @@ std::string pointToCompressedHex(const Point& point) {
     return oss.str();
 }
 
-// Corrected helper function to calculate RIPEMD160(SHA256(pubkey))
+// Helper function to calculate RIPEMD160(SHA256(pubkey))
 std::string publicKeyToRIPEMD160(const Point& pubKey) {
     // Get the compressed public key as a hex string
     std::string compressedKeyHex = pointToCompressedHex(pubKey);
-    
+
     // Convert hex string to bytes
     std::vector<uint8_t> compressedKeyBytes;
     for (size_t i = 0; i < compressedKeyHex.length(); i += 2) {
         std::string byteString = compressedKeyHex.substr(i, 2);
-        uint8_t byte = (uint8_t) strtol(byteString.c_str(), nullptr, 16);
+        uint8_t byte = (uint8_t)strtol(byteString.c_str(), nullptr, 16);
         compressedKeyBytes.push_back(byte);
     }
 
@@ -57,7 +60,11 @@ std::string publicKeyToRIPEMD160(const Point& pubKey) {
     for (int i = 0; i < 20; ++i) {
         oss << std::hex << std::setw(2) << std::setfill('0') << (int)ripemd160Hash[i];
     }
-    return oss.str();
+
+    // Convert hash to lowercase for consistent comparison
+    std::string hashStr = oss.str();
+    std::transform(hashStr.begin(), hashStr.end(), hashStr.begin(), ::tolower);
+    return hashStr;
 }
 
 int main() {
@@ -85,25 +92,29 @@ int main() {
 
     uint64_t totalKeysProcessed = 0;
 
-    // Loop through the range and check for 100 billionth key pairs
+    // Loop through the range and check each key
     for (uint64_t privateKey = START_KEY; privateKey <= END_KEY; privateKey += BILLION) {
         Int privKey(privateKey);                      // Private key
         Point pubKey = secp.ComputePublicKey(&privKey); // Compute public key
 
-        // Aggregate total keys processed across all threads
-        totalKeysProcessed += threadsPerIteration;
+        // Compute RIPEMD-160 hash of the compressed public key
+        std::string rmd160Hash = publicKeyToRIPEMD160(pubKey);
 
-        // Check if this is the 100 billionth key pair
-        if (totalKeysProcessed >= TARGET_KEY_INTERVAL) {
-            std::cout << "100 Billionth Key Pair Found!" << std::endl;
+        // Check if the computed hash matches the target hash
+        if (rmd160Hash == TARGET_HASH) {
+            std::cout << "Matching Key Pair Found!" << std::endl;
             std::cout << "Private Key: " << std::hex << privateKey << std::endl;
             std::cout << "Compressed Public Key: " << pointToCompressedHex(pubKey) << std::endl;
-
-            // Convert the public key to RIPEMD160 hash and print it
-            std::string rmd160Hash = publicKeyToRIPEMD160(pubKey);
             std::cout << "RIPEMD160 Hash: " << rmd160Hash << std::endl;
+            break; // Exit loop after finding the matching key pair
+        }
 
-            break; // Exit loop after finding the target key pair
+        // Update total keys processed
+        totalKeysProcessed += threadsPerIteration;
+
+        // Optional: Print progress every so often
+        if (totalKeysProcessed % (100 * BILLION) == 0) {
+            std::cout << "Processed " << totalKeysProcessed << " keys so far..." << std::endl;
         }
     }
 
