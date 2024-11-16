@@ -77,7 +77,7 @@ int main() {
     const int nbThreadGroup = 1024;         // Number of thread groups
     const int nbThreadPerGroup = 128;       // Threads per group
     const uint64_t threadsPerIteration = nbThreadGroup * nbThreadPerGroup;
-    const uint32_t maxFound = 1024;         // Max items to be found
+    const uint32_t maxFound = 65536;         // Max items to be found
     const bool rekey = false;               // No rekeying during the process
 
     // Create the GPU engine
