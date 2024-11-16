@@ -96,7 +96,7 @@ int main() {
         // Check if this is the 100 billionth key pair
         if (totalKeysProcessed >= TARGET_KEY_INTERVAL) {
             std::cout << "100 Billionth Key Pair Found!" << std::endl;
-            std::cout << "Private Key: 0x" << std::hex << privateKey << std::endl;
+            std::cout << "Private Key: " << std::hex << privateKey << std::endl;
             std::cout << "Compressed Public Key: " << pointToCompressedHex(pubKey) << std::endl;
 
             // Convert the public key to RIPEMD160 hash and print it
