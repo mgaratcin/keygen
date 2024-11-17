@@ -14,7 +14,7 @@
 #define STEP_SIZE 1024 // Match kernel's step size
 
 // Target RIPEMD-160 hash
-const std::string TARGET_HASH = "";
+const std::string TARGET_HASH = "739437bb3dd6d1983e66629c5f08c70e52769371";
 
 // Helper function to convert binary hash to a lowercase hex string
 std::string hashToHex(const uint8_t* hash, size_t len) {
