@@ -1,10 +1,9 @@
-
 #include <iostream>
 #include <iomanip>
 #include <chrono>
 #include <cuda_runtime.h>
 #include "GPU/GPUEngine.h"
-#include "SECP256K1.h"
+#include "SECP256k1.h"
 #include "hash/sha256.h"
 #include "hash/ripemd160.h"
 
