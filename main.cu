@@ -11,9 +11,9 @@
 #define START_KEY 0x4000000000000000ULL
 #define END_KEY   0x400000000000FFFFULL  // Adjust range as needed for testing
 #define BILLION   1000000000
-#define BATCH_SIZE 1024
+#define BATCH_SIZE 262144
 
-const uint32_t maxFound = 1000;
+const uint32_t maxFound = 65536;
 
 // Target RIPEMD-160 hash (20-byte array)
 __constant__ uint8_t TARGET_HASH[20] = {
