@@ -8,7 +8,7 @@
 #include "hash/ripemd160.h"
 
 #define START_KEY 0x4000000000000000ULL
-#define END_KEY   0x400000000000FFFFULL  // Adjust range as needed for testing
+#define END_KEY   0x6FFFFFFFFFFFFFFFULL
 #define BILLION   1000000000
 #define BATCH_SIZE 262144
 
