@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <sstream>
 #include "GPU/GPUEngine.h"
-#include "Secp256K1.h"
+#include "SECP256k1.h"
 #include "hash/sha256.h"
 #include "hash/ripemd160.h"
 #include "Int.h"
