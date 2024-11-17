@@ -1,7 +1,8 @@
 #include <iostream>
 #include <iomanip>
-#include <chrono>
-#include <cuda_runtime.h>
+#include <vector>
+#include <string>
+#include <algorithm>
 #include "GPU/GPUEngine.h"
 #include "SECP256k1.h"
 #include "hash/sha256.h"
@@ -10,105 +11,83 @@
 #define START_KEY 0x4000000000000000ULL
 #define END_KEY   0x6FFFFFFFFFFFFFFFULL
 #define BILLION   1
-#define BATCH_SIZE 262144
+#define STEP_SIZE 1024 // Match kernel's step size
 
-const uint32_t maxFound = 65536;
+// Target RIPEMD-160 hash
+const std::string TARGET_HASH = "dd7106acbb7fa1f3df2b65f3e47676b87b297451";
 
-// Target RIPEMD-160 hash (20-byte array)
-__constant__ uint8_t TARGET_HASH[20] = {
-    0x73, 0x94, 0x37, 0xbb, 0x3d, 0xd6, 0xd1, 0x98, 0x3e, 0x66,
-    0x62, 0x9c, 0x5f, 0x08, 0xc7, 0x0e, 0x52, 0x76, 0x93, 0x71
-};
-
-// Compute RIPEMD160(SHA256(pubkey)) on the GPU
-__device__ void computeHash160(uint64_t privateKey, uint8_t *hash160) {
-    // Stub: Replace with GPU-compatible elliptic curve and hash computation.
-    // This is where GPU-adapted SECP256K1 and hash code will go.
-
-    // For now, mock the output hash.
-    for (int i = 0; i < 20; ++i) {
-        hash160[i] = (privateKey >> (i * 3)) & 0xFF;  // Example hash derivation.
+// Helper function to convert binary hash to a lowercase hex string
+std::string hashToHex(const uint8_t* hash, size_t len) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < len; ++i) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
     }
-}
-
-// Check if the hash matches the target
-__device__ bool matchesTarget(uint8_t *hash160) {
-    for (int i = 0; i < 20; ++i) {
-        if (hash160[i] != TARGET_HASH[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// GPU Kernel for generating keys and matching hash
-__global__ void comp_keys_kernel(uint64_t startKey, uint64_t endKey, uint64_t *foundKeys, uint32_t *foundCount) {
-    uint64_t globalId = blockIdx.x * blockDim.x + threadIdx.x;
-    uint64_t totalThreads = gridDim.x * blockDim.x;
-
-    uint8_t hash160[20];
-
-    for (uint64_t key = startKey + globalId; key <= endKey; key += totalThreads) {
-        // Compute the RIPEMD160 hash of the generated key
-        computeHash160(key, hash160);
-
-        // Check if the hash matches the target
-        if (matchesTarget(hash160)) {
-            uint32_t index = atomicAdd(foundCount, 1);
-            if (index < maxFound) {
-                foundKeys[index] = key;
-            }
-            printf("Match found! Key: %016llx (Thread: %llu)\n", key, globalId);
-        }
-
-        // Debug: Print every billionth key
-        if ((key - startKey) % BILLION == 0) {
-            printf("Key: %016llx (Thread: %llu)\n", key, globalId);
-        }
-    }
+    return oss.str();
 }
 
 int main() {
-    uint64_t *d_foundKeys, *h_foundKeys;
-    uint32_t *d_foundCount;
-    uint64_t startKey = START_KEY;
-    uint64_t endKey = END_KEY;
+    // GPU engine parameters
+    const int gpuId = 0;
+    const int nbThreadGroup = 1024; // Number of thread groups
+    const int nbThreadPerGroup = 128; // Threads per group
+    const uint32_t maxFound = 65536; // Max results
+    const bool rekey = false;
 
-    h_foundKeys = new uint64_t[maxFound]();
+    // Create GPU engine
+    GPUEngine gpuEngine(nbThreadGroup, nbThreadPerGroup, gpuId, maxFound, rekey);
 
-    // Allocate GPU memory
-    cudaMalloc(&d_foundKeys, sizeof(uint64_t) * maxFound);
-    cudaMalloc(&d_foundCount, sizeof(uint32_t));
-    cudaMemset(d_foundCount, 0, sizeof(uint32_t));
+    // Set search mode and type
+    gpuEngine.SetSearchMode(SEARCH_COMPRESSED);
+    gpuEngine.SetSearchType(P2PKH);
 
-    int threadsPerBlock = 256;
-    int numberOfBlocks = 1024;
+    // Print GPU info
+    GPUEngine::PrintCudaInfo();
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    // Convert target hash to binary format
+    uint8_t targetHash[20];
+    for (size_t i = 0; i < TARGET_HASH.size(); i += 2) {
+        targetHash[i / 2] = static_cast<uint8_t>(strtol(TARGET_HASH.substr(i, 2).c_str(), nullptr, 16));
+    }
 
-    // Launch the GPU kernel
-    comp_keys_kernel<<<numberOfBlocks, threadsPerBlock>>>(startKey, endKey, d_foundKeys, d_foundCount);
-    cudaDeviceSynchronize();
+    // Initialize prefix vector
+    std::vector<prefix_t> prefixes;
+    prefixes.push_back(*(prefix_t*)targetHash); // Assuming the target hash is interpreted as a prefix.
 
-    // Copy results back to host
-    cudaMemcpy(h_foundKeys, d_foundKeys, sizeof(uint64_t) * maxFound, cudaMemcpyDeviceToHost);
+    gpuEngine.SetPrefix(prefixes);
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    uint64_t totalKeysProcessed = 0;
 
-    std::cout << "Found keys:" << std::endl;
-    for (uint32_t i = 0; i < maxFound; ++i) {
-        if (h_foundKeys[i] != 0) {
-            std::cout << "Private Key: " << std::hex << h_foundKeys[i] << std::endl;
+    // Start the GPU search
+    for (uint64_t privateKeyStart = START_KEY; privateKeyStart <= END_KEY; privateKeyStart += BILLION) {
+        std::vector<ITEM> results;
+
+        // Launch GPU kernel to search within the current key range
+        gpuEngine.Launch(results, false);
+
+        // Check results
+        for (const auto& item : results) {
+            // Compute the private key based on the thread ID and increment
+            uint64_t privateKey = privateKeyStart + (item.thId * STEP_SIZE) + item.incr;
+
+            std::cout << "Match Found!" << std::endl;
+            std::cout << "Thread ID: " << item.thId << std::endl;
+            std::cout << "Incr: " << item.incr << std::endl;
+            std::cout << "Endo: " << item.endo << std::endl;
+            std::cout << "Hash: " << hashToHex(item.hash, 20) << std::endl;
+            std::cout << "Mode: " << (item.mode ? "Compressed" : "Uncompressed") << std::endl;
+            std::cout << "Private Key: " << std::hex << privateKey << std::endl;
+
+            return 0;
+        }
+
+        totalKeysProcessed += BILLION;
+
+        // Optional: Log progress
+        if (totalKeysProcessed % (100 * BILLION) == 0) {
+            std::cout << "Processed " << totalKeysProcessed << " keys so far..." << std::endl;
         }
     }
 
-    std::cout << "Execution Time: " << duration << " ms" << std::endl;
-
-    // Free GPU memory
-    cudaFree(d_foundKeys);
-    cudaFree(d_foundCount);
-    delete[] h_foundKeys;
-
+    std::cout << "Processing complete. No matching key found." << std::endl;
     return 0;
 }
