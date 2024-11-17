@@ -30,7 +30,7 @@ int main() {
     const int gpuId = 0;
     const int nbThreadGroup = 1024; // Number of thread groups
     const int nbThreadPerGroup = 128; // Threads per group
-    const uint32_t maxFound = 65536; // Max results
+    const uint32_t maxFound = 262144; // Max results
     const bool rekey = false;
 
     // Create GPU engine
