@@ -16,7 +16,7 @@
 #define STEP_SIZE 1024
 
 // Target RIPEMD-160 hash
-const std::string TARGET_HASH = "9485b191ecddcb237b3d1546d99d5a71b896af53";
+const std::string TARGET_HASH = "739437bb3dd6d1983e66629c5f08c70e52769371";
 
 int main() {
     // GPU engine parameters
