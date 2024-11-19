@@ -5,12 +5,12 @@
 #include "GPU/GPUEngine.h" // GPU Engine for computation
 #include "SECP256k1.h"     // Ensure correct case for SECP256K1
 #include "hash/sha256.h"   // Include your internal SHA256 header
-#include "hash/ripemd160.h" // Include your internal RIPEMD160 header
+#include "hash/ripemd160.h" // Include your internal RIPEMD160 header :
 
-#define START_KEY 0x4000000000000000ULL
-#define END_KEY   0x7fffffffffffffffULL
-#define BILLION   131078
-#define TARGET_KEY_INTERVAL 1000000000ULL // Print every 100 billionth key 
+#define START_KEY 0x80000000ULL
+#define END_KEY   0xffffffffULL
+#define BILLION   1
+#define TARGET_KEY_INTERVAL 1000000000000ULL // Print every 100 billionth key 
 
 // Helper function to convert Int to hex string
 std::string intToHex(const Int& value) {
@@ -67,7 +67,7 @@ int main() {
 
     // Initialize GPU parameters
     const int gpuId = 0;                    // Use the first GPU
-    const int nbThreadGroup = 1024;         // Number of thread groups
+    const int nbThreadGroup = 10240;         // Number of thread groups
     const int nbThreadPerGroup = 128;       // Threads per group
     const uint64_t threadsPerIteration = nbThreadGroup * nbThreadPerGroup;
     const uint32_t maxFound = 262144;         // Max items to be found
@@ -85,13 +85,29 @@ int main() {
 
     uint64_t totalKeysProcessed = 0;
 
-    // Loop through the range and check for 100 billionth key pairs
+    // Define the target RIPEMD160 hash
+    const std::string TARGET_HASH = "a6e0ffc4d24a61e52bd23c1fd98b04795dc89b16";
+
+    // Loop through the range and check for target hash
     for (uint64_t privateKey = START_KEY; privateKey <= END_KEY; privateKey += BILLION) {
         Int privKey(privateKey);                      // Private key
         Point pubKey = secp.ComputePublicKey(&privKey); // Compute public key
 
         // Aggregate total keys processed across all threads
         totalKeysProcessed += threadsPerIteration;
+
+        // Convert the public key to RIPEMD160 hash and print it
+        std::string rmd160Hash = publicKeyToRIPEMD160(pubKey);
+        std::cout << "Current RIPEMD160 Hash: " << rmd160Hash << std::endl;
+
+        // Check if the RIPEMD160 hash matches the target
+        if (rmd160Hash == TARGET_HASH) {
+            std::cout << "Target 160 Hit!" << std::endl;
+            std::cout << "Private Key: " << std::hex << privateKey << std::endl;
+            std::cout << "Compressed Public Key: " << pointToCompressedHex(pubKey) << std::endl;
+            std::cout << "RIPEMD160 Hash: " << rmd160Hash << std::endl;
+            break; // Exit loop after finding the target key pair
+        }
 
         // Check if this is the 100 billionth key pair
         if (totalKeysProcessed >= TARGET_KEY_INTERVAL) {
@@ -100,7 +116,6 @@ int main() {
             std::cout << "Compressed Public Key: " << pointToCompressedHex(pubKey) << std::endl;
 
             // Convert the public key to RIPEMD160 hash and print it
-            std::string rmd160Hash = publicKeyToRIPEMD160(pubKey);
             std::cout << "RIPEMD160 Hash: " << rmd160Hash << std::endl;
 
             break; // Exit loop after finding the target key pair
@@ -110,3 +125,4 @@ int main() {
     std::cout << "Processing complete." << std::endl;
     return 0;
 }
+
