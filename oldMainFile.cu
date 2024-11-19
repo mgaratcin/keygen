@@ -9,8 +9,8 @@
 
 #define START_KEY 0x4000000000000000ULL
 #define END_KEY   0x7fffffffffffffffULL
-#define BILLION   1000000000
-#define TARGET_KEY_INTERVAL 100000000000ULL // Print every 100 billionth key 
+#define BILLION   131078
+#define TARGET_KEY_INTERVAL 1000000000ULL // Print every 100 billionth key 
 
 // Helper function to convert Int to hex string
 std::string intToHex(const Int& value) {
@@ -70,7 +70,7 @@ int main() {
     const int nbThreadGroup = 1024;         // Number of thread groups
     const int nbThreadPerGroup = 128;       // Threads per group
     const uint64_t threadsPerIteration = nbThreadGroup * nbThreadPerGroup;
-    const uint32_t maxFound = 1024;         // Max items to be found
+    const uint32_t maxFound = 262144;         // Max items to be found
     const bool rekey = false;               // No rekeying during the process
 
     // Create the GPU engine
@@ -95,7 +95,7 @@ int main() {
 
         // Check if this is the 100 billionth key pair
         if (totalKeysProcessed >= TARGET_KEY_INTERVAL) {
-            std::cout << "100 Billionth Key Pair Found!" << std::endl;
+            std::cout << "Trillionth Key Pair Found!" << std::endl;
             std::cout << "Private Key: " << std::hex << privateKey << std::endl;
             std::cout << "Compressed Public Key: " << pointToCompressedHex(pubKey) << std::endl;
 
