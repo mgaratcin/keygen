@@ -15,6 +15,8 @@
 #include "hash/ripemd160.h"    // Include your internal RIPEMD160 header
 #include <cuda_runtime.h>      // CUDA runtime API
 
+#define TARGET_KEY_INTERVAL 100000000000000000ULL // Print every 1 trillionth key
+
 // Semaphore Implementation
 class Semaphore {
 public:
@@ -43,10 +45,10 @@ private:
 
 // Structure to hold configuration parameters
 struct Config {
-    uint64_t startKey = 0x1000000ULL;
-    uint64_t endKey = 0x1ffffffffULL;
-    std::string targetHash = "2f396b29b27324300d0c59b17c3abc1835bd3dbb";
-    unsigned int numThreads = std::thread::hardware_concurrency();
+    uint64_t startKey = 0x80000000ULL;
+    uint64_t endKey = 0xffffffffULL;
+    std::string targetHash = "9e42601eeaedc244e15f17375adb0e2cd08efdc9";
+    unsigned int numThreads = 1024;
     double memoryReservationFactor = 0.9; // Reserve 10% of free memory
 };
 
@@ -207,7 +209,7 @@ void worker(const std::string& TARGET_HASH, Semaphore& semaphore, std::atomic<ui
     }
 
     const int nbThreadGroup = 10240;              // Number of thread groups
-    const int nbThreadPerGroup = 128;             // Threads per group
+    const int nbThreadPerGroup = 256;             // Threads per group
     const uint64_t threadsPerIteration = static_cast<uint64_t>(nbThreadGroup) * nbThreadPerGroup;
     const uint32_t maxFound = 262144;             // Max items to be found
     const bool rekey = false;                     // No rekeying during the process
@@ -302,7 +304,7 @@ int main(int argc, char* argv[]) {
     // Initialize semaphore with the number of concurrent GPUEngine instances allowed
     // For 12 GB VRAM and assuming each GPUEngine consumes ~1 GB, set to 12
     // Adjust this number based on actual GPU memory usage per GPUEngine
-    const int MAX_CONCURRENT_GPU_ENGINES = 12;
+    const int MAX_CONCURRENT_GPU_ENGINES = 64;
     Semaphore semaphore(MAX_CONCURRENT_GPU_ENGINES);
 
     // Initialize a global key counter for sequential work allocation
