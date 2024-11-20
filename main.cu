@@ -6,7 +6,7 @@
 // Define GRP_SIZE before including GPUMath.h
 #define GRP_SIZE 64
 
-#include "GPUMath.h" // Ensure this header does not use __uint128_t
+#include "GPU/GPUMath.h"
 
 // Structure to represent a 256-bit integer (with an extra limb for GPUMath)
 typedef struct {
