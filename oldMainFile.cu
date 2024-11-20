@@ -7,8 +7,8 @@
 #include "hash/sha256.h"   // Include your internal SHA256 header
 #include "hash/ripemd160.h" // Include your internal RIPEMD160 header :
 
-#define START_KEY 0x1ULL
-#define END_KEY   0xffffffffULL
+#define START_KEY 0x1000000ULL
+#define END_KEY   0x1ffffffULL
 #define BILLION   1
 #define TARGET_KEY_INTERVAL 1000000000000ULL // Print every 100 billionth key 
 
@@ -86,7 +86,7 @@ int main() {
     uint64_t totalKeysProcessed = 0;
 
     // Define the target RIPEMD160 hash
-    const std::string TARGET_HASH = "97f9281a1383879d72ac52a6a3e9e8b9a4a4f655";
+    const std::string TARGET_HASH = "2f396b29b27324300d0c59b17c3abc1835bd3dbb";
 
     // Loop through the range and check for target hash
     for (uint64_t privateKey = START_KEY; privateKey <= END_KEY; privateKey += BILLION) {
