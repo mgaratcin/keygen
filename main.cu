@@ -289,10 +289,10 @@ __device__ void point_add(Point* R, const Point* P, const Point* Q) {
     // Check if P.x == Q.x and P.y == -Q.y, then R is point at infinity
     bool P_x_eq_Q_x = uint256_eq(P->x, Q->x);
     bool P_y_eq_neg_Q_y = false;
-    // To check if P.y = -Q.y mod FIELD_P, compute Q.y + P.y and see if it equals FIELD_P
+    // To check if P.y = -Q.y mod FIELD_P, compute Q.y + P.y and see if it equals 0
     uint256 sum_y;
     uint256_add_mod(&sum_y, &Q->y, &P->y);
-    if (uint256_eq(sum_y, FIELD_P)) {
+    if (uint256_is_zero(sum_y)) { // Corrected condition
         P_y_eq_neg_Q_y = true;
     }
 
@@ -391,7 +391,7 @@ void print_uint256(const uint256 a) {
 int main() {
     // Define a sample private key (256-bit)
     uint256 h_priv_key;
-    h_priv_key.limb[0] = 0x0000000000000001ULL; // Example private key (very small for demonstration)
+    h_priv_key.limb[0] = 0x0000000000000002ULL; // Example private key (very small for demonstration)
     h_priv_key.limb[1] = 0x0000000000000000ULL;
     h_priv_key.limb[2] = 0x0000000000000000ULL;
     h_priv_key.limb[3] = 0x0000000000000000ULL;
